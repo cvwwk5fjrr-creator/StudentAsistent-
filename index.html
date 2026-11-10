@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Student Hub</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#3b6fe0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Student Hub">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<style>
+:root{--bg:#f4f6fb;--card:#fff;--tx:#161a26;--mut:#6b7385;--ac:#3b6fe0;--ok:#1f9d63;--warn:#d98a0b;--bad:#d6393f;--line:#e3e7f0;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#13151d;--card:#1e222e;--tx:#eef1f8;--mut:#9aa2b6;--ac:#6b9bff;--ok:#3ccf91;--warn:#f5b53a;--bad:#ff6b70;--line:#2c3243;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#13151d;--card:#1e222e;--tx:#eef1f8;--mut:#9aa2b6;--ac:#6b9bff;--ok:#3ccf91;--warn:#f5b53a;--bad:#ff6b70;--line:#2c3243;color-scheme:dark}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:640px;margin:0 auto;padding:18px 16px 110px}
+h1{font-size:26px;margin:6px 0 2px}h2{font-size:15px;color:var(--mut);margin:22px 0 8px;text-transform:uppercase;letter-spacing:.04em}
+.mut{color:var(--mut)}p{margin:0 0 6px}
+.card{background:var(--card);border-radius:16px;padding:14px 16px;margin-bottom:10px;border:1px solid var(--line)}
+.card.now{border-color:var(--ac)}
+.row{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}.stats .card{margin:0}
+.stats b{display:block;font-size:30px}.stats span{color:var(--mut);font-size:13px}
+.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}
+input,select,button{font:inherit;color:var(--tx)}
+input,select{width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);margin-top:8px}
+input.err{border-color:var(--bad)}
+.btn{background:var(--ac);color:#fff;border:0;border-radius:12px;padding:12px 16px;width:100%;margin-top:10px;font-weight:600}
+.task{display:flex;gap:12px;align-items:center}.task.done .t{text-decoration:line-through;color:var(--mut)}
+.task .t{flex:1}.chk{width:26px;height:26px;border-radius:50%;border:2px solid var(--ac);background:none;flex:none;padding:0;color:var(--ac)}
+.task.done .chk{background:var(--ac);color:#fff}
+.x{background:none;border:0;color:var(--mut);font-size:20px;padding:4px 8px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.grid label{font-size:13px;color:var(--mut)}.grid input{margin-top:4px;text-align:center}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px))}
+nav button{flex:1;background:none;border:0;padding:6px 0;font-size:11px;color:var(--mut)}
+nav button span{display:block;font-size:22px}nav button.on{color:var(--ac);font-weight:600}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<nav id="nav"></nav>
+<script>
+const DAYS=["Понедельник","Вторник","Среда","Четверг","Пятница","Суббота","Воскресенье"];
+const COMP=[["РК1",20],["ОК1",10],["СРС1",10],["РК2",20],["ОК2",10],["СРС2",10],["Экзамен",20]];
+const SCALE=[[96,"A",4,"Отлично (5)"],[90,"A-",3.67,"Отлично (5)"],[87,"B+",3.33,"Хорошо (4)"],[83,"B",3,"Хорошо (4)"],[80,"B-",2.67,"Хорошо (4)"],[77,"C+",2.33,"Удовл. (3)"],[73,"C",2,"Удовл. (3)"],[70,"C-",1.67,"Удовл. (3)"],[67,"D+",1.33,"Удовл. (3)"],[63,"D",1,"Удовл. (3)"],[60,"D-",.67,"Удовл. (3)"],[0,"F",0,"Неудовл. (2)"]];
+const VER="Вероятность и статистика с применением ЭВМ",CLOUD="Облачные технологии",NET="Компьютерные сети и системы",AI="Искусственный интеллект",ARCH="Архитектура компьютера",KG="Кесиптик кыргыз тили",DB="Базы данных",ALG="Алгоритмизация и методы программирования";
+const SEED=[[0,VER,"13:00","14:20","236а · лек · Осмонова Ж.Р."],[0,VER,"14:30","15:50","116а · прак · Осмонова Ж.Р."],[0,CLOUD,"16:00","17:20","116а · лек · Осмонова Ж.Р."],
+[1,NET,"14:30","15:50","113а · лек · Ыкынов Р.Т."],[1,AI,"16:00","17:20","206 · лек · Эрмамбетов Ш."],
+[2,ARCH,"13:00","14:20","206 · лек · Талантбеков А.Т."],[2,NET,"14:30","15:50","117 · прак · Ыкынов Р.Т."],
+[3,KG,"13:00","14:20","56 · Мамбетова А.К."],[3,AI,"14:30","15:50","117 · прак · Эрмамбетов Ш."],[3,CLOUD,"16:00","17:20","116а · прак · Осмонова Ж.Р."],[3,ARCH,"16:00","17:20","117а · лек · Талантбеков А.Т. · чередуется"],
+[4,DB,"11:30","12:50","113 · лек · Маликова С."],[4,ALG,"13:00","14:20","116а · лек · Аскар кызы Лира"],[4,DB,"14:30","15:50","116а · лек · Маликова С."],[4,DB,"16:00","17:20","116.2 · прак · Маликова С."],[4,ALG,"16:00","17:20","116.2 · прак · Аскар кызы Лира · чередуется"]];
+let S={lessons:SEED.map((a,i)=>({id:i+1,d:a[0],sub:a[1],st:a[2],en:a[3],r:a[4]})),tasks:[],rat:{},rsub:""};
+let tab="today";
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const today=()=>{const d=new Date();return new Date(d.getFullYear(),d.getMonth(),d.getDate())};
+const ymd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const dleft=s=>Math.round((new Date(s+"T00:00:00")-today())/864e5);
+const f=n=>+n.toFixed(2);
+const subs=()=>[...new Set(S.lessons.map(l=>l.sub))].sort();
+const gi=t=>SCALE.find(r=>t>=r[0]);
+function due(s){const n=dleft(s);return n<0?["просрочено на "+(-n)+" дн.","bad"]:n==0?["сегодня","warn"]:n==1?["завтра","warn"]:["через "+n+" дн.","mut"]}
+
+/* ---------- хранение: localStorage + резервная копия ---------- */
+try{const v=localStorage.getItem("studenthub_v1");if(v)S=Object.assign(S,JSON.parse(v))}catch(e){}
+function save(){try{localStorage.setItem("studenthub_v1",JSON.stringify(S))}catch(e){}}
+function exportData(){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(S)],{type:"application/json"}));a.download="studenthub-backup.json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+function importData(inp){const fl=inp.files[0];if(!fl)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!Array.isArray(d.lessons))throw 0;S=Object.assign(S,d);save();render()}catch(e){alert("Не удалось прочитать файл")}};r.readAsText(fl)}
+
+/* ---------- экраны ---------- */
+const lessonCard=(l,now,edit)=>`<div class="card${now?" now":""}"><div class="row"><b>${l.st}–${l.en}</b><span class="mut" style="font-size:13px;text-align:right">${esc(l.r)}</span></div><div class="row"><span>${esc(l.sub)}</span>${edit?`<button class="x" onclick="delLesson(${l.id})">✕</button>`:""}</div></div>`;
+const byTime=(a,b)=>a.st.localeCompare(b.st);
+
+function vToday(){
+  const d=today(),wd=(d.getDay()+6)%7;
+  const open=S.tasks.filter(t=>!t.done),late=open.filter(t=>t.due&&dleft(t.due)<0).length;
+  const ls=S.lessons.filter(l=>l.d==wd).sort(byTime);
+  const soon=open.filter(t=>t.due).sort((a,b)=>a.due.localeCompare(b.due)).slice(0,5);
+  return `<h1>Привет! 👋</h1><p class="mut">${DAYS[wd]}, ${d.toLocaleDateString("ru-RU")}</p>
+  <div class="stats"><div class="card"><b>${open.length}</b><span>заданий в работе</span></div><div class="card"><b class="${late?"bad":"ok"}">${late}</b><span>просрочено</span></div></div>
+  <h2>Пары сегодня</h2>${ls.length?ls.map(l=>lessonCard(l)).join(""):`<div class="card">Сегодня пар нет 🎉</div>`}
+  <h2>Ближайшие дедлайны</h2>${soon.length?soon.map(t=>{const [x,c]=due(t.due);return `<div class="card"><div class="row"><b>${esc(t.t)}</b><span class="${c}">${x}</span></div><span class="mut">${esc(t.sub)}</span></div>`}).join(""):`<div class="card">Дедлайнов нет ✅</div>`}<h2>Данные</h2><div class="card"><button class="btn" style="margin-top:0" onclick="exportData()">⬇ Сохранить резервную копию</button><label class="btn" style="display:block;text-align:center;background:var(--bg);color:var(--tx);border:1px solid var(--line)">⬆ Загрузить копию<input type="file" accept=".json,application/json" hidden onchange="importData(this)"></label></div>`;
+}
+function vWeek(){
+  const wd=(today().getDay()+6)%7;
+  const form=`<h2>Добавить пару</h2><div class="card"><select id="ld">${DAYS.map((n,i)=>`<option value="${i}"${i==wd?" selected":""}>${n}</option>`).join("")}</select>
+  <input id="ls" placeholder="Предмет"><div class="grid" style="grid-template-columns:1fr 1fr"><input id="lt1" type="time" value="09:00"><input id="lt2" type="time" value="10:20"></div>
+  <input id="lr" placeholder="Аудитория, тип, преподаватель (необязательно)"><button class="btn" onclick="addLesson()">＋ Добавить пару</button></div>`;
+  return `<h1>Расписание</h1>`+DAYS.map((n,i)=>{
+    const ls=S.lessons.filter(l=>l.d==i).sort(byTime);
+    if(!ls.length&&i>4)return "";
+    return `<h2>${n}${i==wd?" · сегодня":""}</h2>`+(ls.length?ls.map(l=>lessonCard(l,i==wd,true)).join(""):`<div class="card mut">Пар нет</div>`);
+  }).join("")+form+`<button class="btn" style="background:var(--bad)" onclick="clearLessons()">Очистить всё расписание</button>`;
+}
+function vTasks(){
+  const opts=subs().concat("Другое").map(s=>`<option>${esc(s)}</option>`).join("");
+  const list=[...S.tasks].sort((a,b)=>a.done-b.done||(a.due||"9").localeCompare(b.due||"9"));
+  return `<h1>Задания</h1><div class="card"><input id="tt" placeholder="Что нужно сделать?"><select id="ts">${opts}</select>
+  <input id="td" type="date" value="${ymd(new Date(Date.now()+7*864e5))}"><button class="btn" onclick="addTask()">＋ Добавить</button></div>`+
+  (list.length?list.map(t=>{const [x,c]=t.due?due(t.due):["","mut"];return `<div class="card task${t.done?" done":""}"><button class="chk" onclick="toggle(${t.id})">${t.done?"✓":""}</button>
+  <div class="t"><div>${esc(t.t)}</div><span class="mut" style="font-size:13px">${esc(t.sub)} · <span class="${t.done?"mut":c}">${t.done?"выполнено":x}</span></span></div><button class="x" onclick="del(${t.id})">✕</button></div>`}).join(""):`<p class="mut">Заданий пока нет.</p>`);
+}
+function vRating(){
+  const names=subs();if(!names.length)return `<h1>Рейтинг</h1><p class="mut">Сначала добавьте пары в расписание: предметы берутся оттуда.</p>`;if(!S.rsub||!names.includes(S.rsub))S.rsub=names[0];
+  const d=S.rat[S.rsub]||{};
+  return `<h1>Рейтинг</h1><p class="mut">100 баллов: 2 модуля по 40 (РК 20 + ОК 10 + СРС 10) и экзамен 20</p>
+  <div class="card"><select onchange="S.rsub=this.value;render()">${names.map(n=>`<option${n==S.rsub?" selected":""}>${esc(n)}</option>`).join("")}</select>
+  <div class="grid" style="margin-top:12px">${COMP.map(([k,m])=>`<div><label>${k} (из ${m})</label><input inputmode="decimal" data-k="${k}" data-m="${m}" value="${d[k]!=null?d[k]:""}" oninput="setRat(this)"></div>`).join("")}</div></div>
+  <div class="card" id="res"></div><h2>Все предметы</h2><div class="card" id="ov"></div>`;
+}
+function calc(){
+  const d=S.rat[S.rsub]||{},sum=ks=>ks.reduce((a,k)=>a+(d[k]||0),0);
+  const m1=sum(["РК1","ОК1","СРС1"]),m2=sum(["РК2","ОК2","СРС2"]),ex=d["Экзамен"],before=m1+m2,tot=before+(ex||0),g=gi(tot);
+  const line=(a,b)=>`<div class="row"><span class="mut">${a}</span><b>${b}</b></div>`;
+  let h=line("Модуль 1",f(m1)+" / 40")+line("Модуль 2",f(m2)+" / 40")+line("Экзамен",(ex==null?"—":f(ex))+" / 20")+
+    `<hr style="border:0;border-top:1px solid var(--line)">`+line(ex==null?"Набрано сейчас":"Итого",f(tot)+" / 100")+line("Оценка",`${g[1]} · GPA ${g[2]} · ${g[3]}`);
+  if(ex==null){h+=`<h2 style="margin-top:14px">Что нужно на экзамене</h2>`+[["5 (отлично)",90],["4 (хорошо)",80],["3 (удовл.)",60]].map(([n,t])=>{
+    const need=t-before;return line("Для "+n,need<=0?"уже обеспечено":need>20?"недостижимо":"нужно "+f(need)+" из 20")}).join("")}
+  $("#res").innerHTML=h;
+  const all=Object.entries(S.rat).filter(([,v])=>Object.keys(v).length),gp=[];
+  $("#ov").innerHTML=all.length?all.map(([n,v])=>{const t=Object.values(v).reduce((a,b)=>a+b,0),x=gi(t);if(v["Экзамен"]!=null)gp.push(x[2]);
+    return line(esc(n),f(t)+" ("+x[1]+")")}).join("")+(gp.length?`<hr style="border:0;border-top:1px solid var(--line)">`+line("GPA (предметы с экзаменом)",f(gp.reduce((a,b)=>a+b,0)/gp.length)):""):`<span class="mut">Введите баллы — здесь появится сводка.</span>`;
+}
+function setRat(e){
+  const raw=e.value.trim().replace(",","."),m=+e.dataset.m,k=e.dataset.k,d=S.rat[S.rsub]=S.rat[S.rsub]||{};
+  if(raw===""){delete d[k];e.classList.remove("err")}
+  else{const v=parseFloat(raw);if(isNaN(v)||v<0||v>m){e.classList.add("err");return}e.classList.remove("err");d[k]=v}
+  save();calc();
+}
+function addTask(){const t=$("#tt").value.trim();if(!t){$("#tt").focus();return}
+  S.tasks.push({id:Date.now(),t,sub:$("#ts").value,due:$("#td").value,done:false});save();render()}
+function toggle(id){const t=S.tasks.find(x=>x.id==id);if(t){t.done=!t.done;save();render()}}
+function del(id){S.tasks=S.tasks.filter(x=>x.id!=id);save();render()}
+function addLesson(){const v=$("#ls").value.trim();if(!v){$("#ls").focus();return}
+  S.lessons.push({id:Date.now(),d:+$("#ld").value,sub:v,st:$("#lt1").value||"09:00",en:$("#lt2").value||"10:20",r:$("#lr").value.trim()});save();render()}
+function delLesson(id){S.lessons=S.lessons.filter(l=>l.id!=id);save();render()}
+function clearLessons(){if(confirm("Удалить всё расписание?")){S.lessons=[];save();render()}}
+function go(t){tab=t;render();window.scrollTo(0,0)}
+
+const TABS=[["today","🏠","Сегодня",vToday],["week","📅","Пары",vWeek],["tasks","📝","Задания",vTasks],["rating","🏆","Рейтинг",vRating]];
+function render(){
+  $("#app").innerHTML=TABS.find(t=>t[0]==tab)[3]();
+  $("#nav").innerHTML=TABS.map(t=>`<button class="${t[0]==tab?"on":""}" onclick="go('${t[0]}')"><span>${t[1]}</span>${t[2]}</button>`).join("");
+  if(tab=="rating")calc();
+}
+render();
+if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+</script>
+</body>
+</html>
